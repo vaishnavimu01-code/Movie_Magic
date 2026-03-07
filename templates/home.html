@@ -1,0 +1,137 @@
+app.py 
+
+from flask import Flask, render_template, request, redirect, url_for, session
+import boto3
+from datetime import date
+import uuid
+
+app = Flask(__name__)
+app.secret_key = "supersecretkey"
+
+# ---------------- AWS DYNAMODB CONNECTION ----------------
+dynamodb = boto3.resource(
+    'dynamodb',
+    region_name='ap-south-1',   # change to your AWS region
+    aws_access_key_id='YOUR_AWS_ACCESS_KEY',
+    aws_secret_access_key='YOUR_AWS_SECRET_KEY'
+)
+
+users_table = dynamodb.Table('users')
+movies_table = dynamodb.Table('movies')
+bookings_table = dynamodb.Table('bookings')
+
+# ---------------- ROUTES ----------------
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/register', methods=['GET','POST'])
+def register():
+    if request.method == 'POST':
+        user_id = str(uuid.uuid4())
+        users_table.put_item(
+            Item={
+                'user_id': user_id,
+                'username': request.form['name'],
+                'email': request.form['email'],
+                'password': request.form['password']  # ⚠️ hash in production
+            }
+        )
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET','POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        response = users_table.get_item(Key={'email': email})
+        user = response.get('Item')
+
+        if user and user['password'] == password:
+            session['user_id'] = user['user_id']
+            session['user'] = user['username']
+            session['email'] = user['email']
+            return redirect(url_for('home'))
+        else:
+            return render_template('login.html', error="Invalid credentials")
+
+    return render_template('login.html')
+
+@app.route('/home')
+def home():
+    movies = movies_table.scan().get('Items', [])
+    bookings = bookings_table.scan(
+        FilterExpression="user_id = :uid",
+        ExpressionAttributeValues={":uid": session['user_id']}
+    ).get('Items', [])
+
+    return render_template('home.html', user=session['user'], movies=movies, bookings=bookings)
+
+@app.route('/search', methods=['GET','POST'])
+def search():
+    if request.method == 'POST':
+        query = request.form.get('movie', '')
+        # DynamoDB doesn't support LIKE, so use scan + filter
+        response = movies_table.scan()
+        movies = [m for m in response['Items'] if query.lower() in m['title'].lower()]
+        return render_template('search.html', movies=movies)
+    return render_template('search.html', movies=[])
+
+@app.route('/book/<string:movie_id>', methods=['GET','POST'])
+def book(movie_id):
+    movie = movies_table.get_item(Key={'movie_id': movie_id}).get('Item')
+    movie['show_times'] = ["10:00 AM", "2:00 PM", "6:00 PM", "9:00 PM"]
+
+    theaters = [
+        {"name": "PVR Cinemas", "location": "City Center"},
+        {"name": "INOX", "location": "Mall Road"},
+        {"name": "Cinepolis", "location": "Downtown"}
+    ]
+
+    today = date.today().isoformat()
+
+    if request.method == 'POST':
+        booking_id = str(uuid.uuid4())
+        seats = request.form['seats']
+        seats_booked = len(seats.split(","))
+
+        bookings_table.put_item(
+            Item={
+                'booking_id': booking_id,
+                'user_id': session['user_id'],
+                'movie_id': movie_id,
+                'seat_number': seats,
+                'location': request.form['address'],
+                'booking_date': request.form['date'],
+                'time': request.form['time'],
+                'amount': request.form['amount']
+            }
+        )
+
+        # Update available seats
+        new_seats = int(movie['available_seats']) - seats_booked
+        movies_table.update_item(
+            Key={'movie_id': movie_id},
+            UpdateExpression="SET available_seats = :val",
+            ExpressionAttributeValues={":val": new_seats}
+        )
+
+        return render_template('ticket.html',
+                               title=movie['title'],
+                               date=request.form['date'],
+                               time=request.form['time'],
+                               seats=seats,
+                               address=request.form['address'],
+                               amount=request.form['amount'],
+                               user=session['user'])
+    return render_template('book.html', movie=movie, theaters=theaters, today=today)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)

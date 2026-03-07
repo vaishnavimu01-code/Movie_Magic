@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard - MovieMagic</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<h1> Admin Dashboard</h1>
+
+<h2>Add New Movie</h2>
+
+<form action="/add_movie" method="POST" enctype="multipart/form-data">
+
+<input type="text" name="title" placeholder="Movie Title" required>
+
+<input type="text" name="genre" placeholder="Genre" required>
+
+<label>Select Language</label>
+<select name="language" required>
+  <option value="">Choose Language</option>
+  <option value="English">English</option>
+  <option value="Hindi">Hindi</option>
+  <option value="Malayalam">Malayalam</option>
+  <option value="Tamil">Tamil</option>
+  <option value="Telugu">Telugu</option>
+</select>
+
+<input type="number" name="price" placeholder="Ticket Price" required>
+
+<input type="file" name="poster" accept="poster/*" required>
+
+<button type="submit" class="btn">Add Movie</button>
+
+</form>
+
+<hr>
+<div class="view-movies">
+
+</div><h2><center>Available Movies</center></h2>
+<center>
+<table border="1" class="movie-list">
+
+<tr>
+<th>Poster</th>
+<th>Title</th>
+<th>Language</th>
+<th>Price</th>
+<th>Action</th>
+</tr>
+
+{% for m in movies %}
+
+<tr>
+
+<td>
+<img src="{{ url_for('static', filename=m.poster) }}" width="80">
+</td>
+
+<td>{{ m.title }}</td>
+
+<td>{{ m.language }}</td>
+
+<td>₹{{ m.price }}</td>
+
+<td>
+<a href="/delete_movie/{{ m.movie_id }}" class="btn">Delete</a>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+</center>
+</div>
+
+</body>
+</html>

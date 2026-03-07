@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>User Profile - MovieMagic</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<h1>User Profile</h1>
+
+<div class="profile-container">
+
+<div class="profile-card">
+
+<h2>Account Details</h2>
+
+<p><b>Name:</b> {{ user.username }}</p>
+<p><b>Email:</b> {{ user.email }}</p>
+
+<a href="/edit_profile" class="btn">Edit Details</a>
+<button class="btn">Change Password</button>
+<button class="btn logout">Logout</button>
+
+</div>
+
+<div class="booking-history">
+
+<h2>My Bookings</h2>
+
+<table>
+
+<tr>
+<th>Movie</th>
+<th>Date</th>
+<th>Seats</th>
+</tr>
+
+{% for b in bookings %}
+
+<tr>
+<td>{{ b.movie }}</td>
+<td>{{ b.date }}</td>
+<td>{{ b.seats }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+</div>
+
+</body>
+</html>

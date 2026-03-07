@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Booking Confirmation</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="ticket-container">
+    <h2>Booking Confirmed!</h2>
+    <div class="ticket-details">
+      <p><strong>Movie:</strong> {{ title }}</p>
+      <p><strong>Date:</strong> {{ date }}</p>
+      <p><strong>Time:</strong> {{ time }}</p>
+      <p><strong>Theater:</strong> {{ address }}</p>
+      <p><strong>Booked by:</strong> {{ user }}</p>
+      <p><strong>Seats:</strong> {{ seats }}</p>
+      <p class="amount">Amount Paid: ₹{{ amount }}</p>
+    </div>
+    <center><p class="screenshot-note">📸 Take a screenshot for future reference.
+    Enjoy your Movie.
+  </p></center>
+    <a href="{{ url_for('home') }}" class="btn-home">Back to Home</a>
+  </div>
+  
+
+</body>
+</html>

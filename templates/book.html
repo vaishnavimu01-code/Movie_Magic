@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Book {{ movie.title }} - MovieMagic</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h2>Book {{ movie.title }}</h2>
+
+  <form method="POST" onsubmit="return validateBooking()">
+    <!-- Theater Selection -->
+    <label for="address">Select Theater:</label>
+    <select name="address" id="address" required>
+      {% for t in theaters %}
+        <option value="{{ t.name }} - {{ t.location }}">{{ t.name }} ({{ t.location }})</option>
+      {% endfor %}
+    </select>
+
+    <!-- Date Picker (no past dates allowed) -->
+    <label for="date">Date:</label>
+    <input type="date" id="date" name="date" value="{{ today }}" min="{{ today }}" required>
+
+    <!-- Show Times -->
+    <label>Select Show Time:</label>
+    <div class="time-options">
+      {% for slot in movie.show_times %}
+        <label class="time-slot">
+          <input type="radio" name="time" value="{{ slot }}" required>
+          {{ slot }}
+        </label>
+      {% endfor %}
+    </div>
+
+    <!-- Seat Map -->
+     <label><b>Select your seats:</b></label>
+    <div class="seat-map">
+      {% for row in ['A','B','C','D','E','F','G','H'] %}
+        <div class="seat-row">
+          <!-- First block of 10 seats -->
+          {% for num in range(1,11) %}
+            {% set seat_id = row ~ num %}
+            <div class="seat {% if seat_id in booked_seats %}booked{% endif %}" 
+                 data-seat="{{ seat_id }}">
+              {{ seat_id }}
+            </div>
+          {% endfor %}
+
+          <!-- Aisle gap -->
+          <div class="seat-gap"></div>
+
+          <!-- Second block of 10 seats -->
+          {% for num in range(11,21) %}
+            {% set seat_id = row ~ num %}
+            <div class="seat {% if seat_id in booked_seats %}booked{% endif %}" 
+                 data-seat="{{ seat_id }}">
+              {{ seat_id }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+    <input type="hidden" id="seats" name="seats" required>
+    <center>All Eyes this side</center>
+    <hr>
+    <!-- Auto Amount -->
+    <label for="amount">Amount (₹):</label>
+    <input type="number" id="amount" name="amount" readonly>
+
+    <lable><b>Select Payment method:</b></lable>
+    <button class="pay-btn">UPI</button>   <button class="pay-btn">Card</button>   <button class="pay-btn">NetBanking</button>
+    <hr>
+    <center><button type="submit" class="btn">Confirm Booking</button></center>
+  </form>
+
+  <!-- JavaScript for seat selection & validation -->
+  <script>
+    const seatsInput = document.getElementById("seats");
+    const amountInput = document.getElementById("amount");
+    const pricePerSeat = {{ movie.price }};
+
+    // Seat selection logic
+    document.querySelectorAll(".seat").forEach(seat => {
+      seat.addEventListener("click", () => {
+        if (seat.classList.contains("booked")) return;
+
+        seat.classList.toggle("selected");
+        let selectedSeats = Array.from(document.querySelectorAll(".seat.selected"))
+                                 .map(s => s.dataset.seat);
+        seatsInput.value = selectedSeats.join(",");
+        amountInput.value = selectedSeats.length * pricePerSeat;
+      });
+    });
+
+    // Validation before form submit
+    function validateBooking() {
+      if (!seatsInput.value) {
+        alert("Please select at least one seat before confirming!");
+        return false; // prevent form submission
+      }
+      return true;
+    }
+  </script>
+</body>
+</html>
